@@ -59,6 +59,12 @@ func TestSerialize(t *testing.T) {
 		Bar string `json:"bar"`
 	}
 
+	type SimpleStructWithMap struct {
+		Foo      string            `json:"foo" serializer:"public"`
+		FortyTwo map[string]string `json:"42" serializer:"public"`
+		Bar      string            `json:"bar"`
+	}
+
 	t.Run("map string struct", func(t *testing.T) {
 		foo := map[string]SimpleStruct{"foo": {
 			Foo: "bar",
@@ -70,6 +76,24 @@ func TestSerialize(t *testing.T) {
 			Foo string `json:"foo" serializer:"public"`
 		}{"foo": {
 			Foo: "bar",
+		}})
+		assert.Equal(t, str2, str1)
+	})
+
+	t.Run("map string struct with map inside", func(t *testing.T) {
+		foo := map[string]SimpleStructWithMap{"foo": {
+			Foo:      "bar",
+			FortyTwo: map[string]string{"42": "42"},
+			Bar:      "foo",
+		}}
+		out := Serialize(foo, "public")
+		str1, _ := json.Marshal(out)
+		str2, _ := json.Marshal(map[string]struct {
+			Foo      string            `json:"foo" serializer:"public"`
+			FortyTwo map[string]string `json:"42" serializer:"public"`
+		}{"foo": {
+			Foo:      "bar",
+			FortyTwo: map[string]string{"42": "42"},
 		}})
 		assert.Equal(t, str2, str1)
 	})
