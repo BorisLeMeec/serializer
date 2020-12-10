@@ -36,6 +36,8 @@ func (s *Serializer) _serialize(in interface{}, tag string) interface{} {
 		return s.serializeStruct(in, tag)
 	case k == reflect.Slice:
 		return s.serializeSlice(in, tag)
+	case k == reflect.Map:
+		return s.serializeMap(in, tag)
 	default:
 		fmt.Println("unknown kind: " + k.String())
 	}
@@ -65,6 +67,24 @@ func (s *Serializer) serializeSlice(in interface{}, tag string) []interface{} {
 		return []interface{}{}
 	}
 	return out
+}
+
+func (s *Serializer) serializeMap(in interface{}, tag string) interface{} {
+	iter := reflect.ValueOf(in).MapRange()
+	var init = false
+	var _map reflect.Value
+	for iter.Next() {
+		val := s._serialize(iter.Value().Interface(), tag)
+		if !init {
+			_map = reflect.MakeMap(reflect.MapOf(iter.Key().Type(), reflect.TypeOf(val)))
+			init = true
+		}
+		_map.SetMapIndex(iter.Key(), reflect.ValueOf(val))
+	}
+	if _map.Len() == 0 {
+		return map[interface{}]interface{}{}
+	}
+	return _map.Interface()
 }
 
 func (s *Serializer) serializeStruct(st interface{}, tag string) interface{} {

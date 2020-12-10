@@ -42,6 +42,38 @@ func TestSerialize(t *testing.T) {
 		assert.Equal(t, test, out)
 	})
 
+	t.Run("map string int", func(t *testing.T) {
+		foo := map[string]int{"foo": 9}
+		out := Serialize(foo, "")
+		assert.Equal(t, foo, out)
+	})
+
+	t.Run("map string string", func(t *testing.T) {
+		foo := map[string]string{"foo": "bar", "bar": "foo"}
+		out := Serialize(foo, "")
+		assert.Equal(t, foo, out)
+	})
+
+	type SimpleStruct struct {
+		Foo string `json:"foo" serializer:"public"`
+		Bar string `json:"bar"`
+	}
+
+	t.Run("map string struct", func(t *testing.T) {
+		foo := map[string]SimpleStruct{"foo": {
+			Foo: "bar",
+			Bar: "foo",
+		}}
+		out := Serialize(foo, "public")
+		str1, _ := json.Marshal(out)
+		str2, _ := json.Marshal(map[string]struct {
+			Foo string `json:"foo" serializer:"public"`
+		}{"foo": {
+			Foo: "bar",
+		}})
+		assert.Equal(t, str2, str1)
+	})
+
 	t.Run("bool pointer", func(t *testing.T) {
 		bar := true
 		foo := &bar
