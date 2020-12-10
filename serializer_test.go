@@ -7,12 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type AnonymousStruct struct {
-	Foo string `serializer:"public"`
-}
-
-type AnonymousString string
-
 func TestSerialize(t *testing.T) {
 	t.Run("nil", func(t *testing.T) {
 		out := Serialize(nil, "")
@@ -116,6 +110,10 @@ func TestSerialize(t *testing.T) {
 		}{Test: "foo"}}, out)
 	})
 
+	type AnonymousStruct struct {
+		Foo string `serializer:"public"`
+	}
+
 	t.Run("struct with AnonymousStruct", func(t *testing.T) {
 		str, _ := json.Marshal(Serialize(struct {
 			AnonymousStruct `serializer:"public"`
@@ -127,17 +125,17 @@ func TestSerialize(t *testing.T) {
 	})
 
 	t.Run("struct with AnonymousStruct jsoned", func(t *testing.T) {
-		str, _:= json.Marshal(Serialize(struct {
+		str, _ := json.Marshal(Serialize(struct {
 			AnonymousStruct `json:"foo" serializer:"public"`
 		}{AnonymousStruct{Foo: "foo"}}, "public"))
 		strTest, _ := json.Marshal(struct {
-			AnonymousStruct AnonymousStruct `json:"foo" serializer:"public"`
-		}{AnonymousStruct{
-			Foo: "foo",
-		}})
+			AnonymousStruct `json:"foo" serializer:"public"`
+		}{AnonymousStruct{Foo: "foo"}})
 		assert.Equal(t, str, strTest)
 
 	})
+
+	type AnonymousString string
 
 	t.Run("struct with AnonymousString", func(t *testing.T) {
 		str, _ := json.Marshal(Serialize(struct {
@@ -146,6 +144,49 @@ func TestSerialize(t *testing.T) {
 		strTest, _ := json.Marshal(struct {
 			AnonymousString AnonymousString `json:"foo" serializer:"public"`
 		}{"foo"})
+
+		assert.Equal(t, str, strTest)
+	})
+
+	type DeepStruct struct {
+		AnonymousStruct
+		Foo string `serializer:"public"`
+	}
+	t.Run("struct with deep Anonymous struct", func(t *testing.T) {
+		str, _ := json.Marshal(Serialize(struct {
+			Test DeepStruct
+			Foo  string
+			Bar  string `serializer:"public"`
+		}{DeepStruct{Foo: "foo"}, "bar", "foo"}, "public"))
+		strTest, _ := json.Marshal(Serialize(struct {
+			Test DeepStruct
+			Bar  string `serializer:"public"`
+		}{DeepStruct{Foo: "foo"}, "foo"}, "public"))
+
+		assert.Equal(t, str, strTest)
+	})
+
+	type UUID struct {
+		UUID string `gorm:"size:255;uniqueIndex" json:"uuid" serializer:"public"`
+	}
+
+	type BaseModel struct {
+		UUID
+		ID   uint `json:"id"`
+		Name string
+	}
+
+	t.Run("complex struct with complex deep Anonymous struct", func(t *testing.T) {
+		str, _ := json.Marshal(Serialize(struct {
+			BaseModel
+			Foo string
+			Bar string `serializer:"public"`
+		}{BaseModel{UUID{UUID: "uuid"}, 5, "test"}, "bar", "foo"}, "public"))
+		strTest, _ := json.Marshal(Serialize(struct {
+			BaseModel
+			Foo string
+			Bar string `serializer:"public"`
+		}{BaseModel{UUID{UUID: "uuid"}, 5, "test"}, "bar", "foo"}, "public"))
 
 		assert.Equal(t, str, strTest)
 	})

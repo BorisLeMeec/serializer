@@ -27,9 +27,7 @@ func Serialize(in interface{}, tag string) interface{} {
 	case reflect.Ptr:
 		return serializePointer(in, tag)
 	case reflect.Struct:
-		s := serializeStruct(in, tag)
-		return s
-		return reflect.ValueOf(s).Convert(reflect.TypeOf(in))
+		return serializeStruct(in, tag)
 	case reflect.Slice:
 		return serializeSlice(v.Interface(), tag)
 	default:
@@ -88,17 +86,18 @@ func getStructFieldsValues(s interface{}, tag string) []structFieldValue {
 		if !keepField(f, tag) || !unicode.IsUpper(rune(f.Name[0])) {
 			continue
 		}
+		value := Serialize(values.Field(i).Interface(), tag)
 		fields = append(fields, structFieldValue{
 			field: reflect.StructField{
 				Name:      f.Name,
-				Type:      f.Type,
+				Type:      reflect.TypeOf(value),
 				Tag:       f.Tag,
 				Anonymous: f.Anonymous,
 				PkgPath:   f.PkgPath,
 				Index:     f.Index,
 				Offset:    f.Offset,
 			},
-			value: Serialize(values.Field(i).Interface(), tag),
+			value: value,
 		})
 
 	}
@@ -109,10 +108,7 @@ func getStructFieldsValues(s interface{}, tag string) []structFieldValue {
 func initializeStruct(s reflect.Value, source []structFieldValue, tag string) {
 	model := reflect.TypeOf(s.Interface())
 	for i := 0; i < s.NumField(); i++ {
-		fieldValue := s.Field(i)
-		fieldModel := model.Field(i)
-		fieldSourceValue := source[i].value
-		fieldValue.Set(reflect.ValueOf(fieldSourceValue).Convert(fieldModel.Type))
+		s.Field(i).Set(reflect.ValueOf(source[i].value).Convert(model.Field(i).Type))
 	}
 }
 
