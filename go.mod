@@ -1,4 +1,4 @@
-module Serializer
+module github.com/BorisLeMeec/Serializer
 
 go 1.15
 
