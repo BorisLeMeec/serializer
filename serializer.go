@@ -1,4 +1,4 @@
-package Serializer
+package serializer
 
 import (
 	"fmt"
