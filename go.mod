@@ -1,4 +1,4 @@
-module serializer
+module Serializer
 
 go 1.15
 
