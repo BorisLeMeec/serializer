@@ -1,12 +1,11 @@
-package serializer_test
+package Serializer_test
 
 import (
 	"encoding/json"
 	"testing"
 
+	serializer "github.com/BorisLeMeec/Serializer"
 	"github.com/stretchr/testify/assert"
-
-	"serializer"
 )
 
 type AnonymousStruct struct {
