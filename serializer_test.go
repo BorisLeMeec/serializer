@@ -26,7 +26,7 @@ func TestSerialize(t *testing.T) {
 
 	t.Run("int", func(t *testing.T) {
 		out := Serialize(0, "")
-		assert.Equal(t, int64(0), out)
+		assert.Equal(t, 0, out)
 	})
 
 	t.Run("bool", func(t *testing.T) {

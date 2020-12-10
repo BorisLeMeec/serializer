@@ -8,51 +8,56 @@ import (
 	"github.com/fatih/structtag"
 )
 
+type Serializer struct {
+}
+
 type structFieldValue struct {
 	field reflect.StructField
 	value interface{}
 }
 
+func New() Serializer {
+	return Serializer{}
+}
+
 func Serialize(in interface{}, tag string) interface{} {
-	v := reflect.ValueOf(in)
-	switch v.Kind() {
-	case reflect.Bool:
-		return v.Bool()
-	case reflect.String:
-		return v.String()
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return v.Int()
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return v.Uint()
-	case reflect.Ptr:
-		return serializePointer(in, tag)
-	case reflect.Struct:
-		return serializeStruct(in, tag)
-	case reflect.Slice:
-		return serializeSlice(v.Interface(), tag)
+	s := Serializer{}
+	return s._serialize(in, tag)
+}
+
+func (s *Serializer) _serialize(in interface{}, tag string) interface{} {
+	k := reflect.ValueOf(in).Kind()
+	switch {
+	case simpleType(k):
+		return in
+	case k == reflect.Ptr:
+		return s.serializePointer(in, tag)
+	case k == reflect.Struct:
+		return s.serializeStruct(in, tag)
+	case k == reflect.Slice:
+		return s.serializeSlice(in, tag)
 	default:
-		fmt.Println("unknown kind: " + v.Kind().String())
+		fmt.Println("unknown kind: " + k.String())
 	}
 	return nil
 }
 
-func serializePointer(in interface{}, tag string) interface{} {
+func (s *Serializer) serializePointer(in interface{}, tag string) interface{} {
 	v := reflect.ValueOf(in).Elem()
 	switch v.Kind() {
 	case reflect.Struct:
-		s := Serialize(v.Interface(), tag)
+		s := s._serialize(v.Interface(), tag)
 		return &s
 	default:
 		return in
 	}
 }
 
-func serializeSlice(in interface{}, tag string) []interface{} {
+func (s *Serializer) serializeSlice(in interface{}, tag string) []interface{} {
 	var out []interface{}
-	s := reflect.ValueOf(in)
-	for i := 0; i < s.Len(); i++ {
-		e := Serialize(s.Index(i).Interface(), tag)
-		if e != nil {
+	v := reflect.ValueOf(in)
+	for i := 0; i < v.Len(); i++ {
+		if e := s._serialize(v.Index(i).Interface(), tag); e != nil {
 			out = append(out, e)
 		}
 	}
@@ -62,8 +67,8 @@ func serializeSlice(in interface{}, tag string) []interface{} {
 	return out
 }
 
-func serializeStruct(s interface{}, tag string) interface{} {
-	fieldsValues := getStructFieldsValues(s, tag)
+func (s *Serializer) serializeStruct(st interface{}, tag string) interface{} {
+	fieldsValues := s.getStructFieldsValues(st, tag)
 	if len(fieldsValues) == 0 {
 		return nil
 	}
@@ -76,17 +81,17 @@ func serializeStruct(s interface{}, tag string) interface{} {
 	return out.Elem().Interface()
 }
 
-func getStructFieldsValues(s interface{}, tag string) []structFieldValue {
+func (s *Serializer) getStructFieldsValues(st interface{}, tag string) []structFieldValue {
 	var fields []structFieldValue
 
-	values := reflect.ValueOf(s)
-	types := reflect.TypeOf(s)
+	values := reflect.ValueOf(st)
+	types := reflect.TypeOf(st)
 	for i := 0; i < types.NumField(); i++ {
 		f := types.Field(i)
-		if !keepField(f, tag) || !unicode.IsUpper(rune(f.Name[0])) {
+		if !s.keepField(f, tag) || !unicode.IsUpper(rune(f.Name[0])) {
 			continue
 		}
-		value := Serialize(values.Field(i).Interface(), tag)
+		value := s._serialize(values.Field(i).Interface(), tag)
 		fields = append(fields, structFieldValue{
 			field: reflect.StructField{
 				Name:      f.Name,
@@ -112,7 +117,7 @@ func initializeStruct(s reflect.Value, source []structFieldValue, tag string) {
 	}
 }
 
-func keepField(f reflect.StructField, condition string) bool {
+func (s *Serializer) keepField(f reflect.StructField, condition string) bool {
 	if f.Anonymous {
 		return true
 	}
@@ -130,4 +135,21 @@ func keepField(f reflect.StructField, condition string) bool {
 		return false
 	}
 	return false
+}
+
+func simpleType(kind reflect.Kind) bool {
+	return kind == reflect.Bool ||
+		kind == reflect.String ||
+		kind == reflect.Int ||
+		kind == reflect.Int8 ||
+		kind == reflect.Int16 ||
+		kind == reflect.Int32 ||
+		kind == reflect.Int64 ||
+		kind == reflect.Uint ||
+		kind == reflect.Uint8 ||
+		kind == reflect.Uint16 ||
+		kind == reflect.Uint32 ||
+		kind == reflect.Uint64 ||
+		kind == reflect.Float32 ||
+		kind == reflect.Float64
 }
