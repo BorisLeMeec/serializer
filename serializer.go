@@ -108,25 +108,26 @@ func (s *Serializer) getStructFieldsValues(st interface{}, tag string) []structF
 	types := reflect.TypeOf(st)
 	for i := 0; i < types.NumField(); i++ {
 		f := types.Field(i)
-		if !s.keepField(f, tag) || !unicode.IsUpper(rune(f.Name[0])) {
+		if !s.keepField(f, tag) {
 			continue
 		}
 		value := s._serialize(values.Field(i).Interface(), tag)
-		fields = append(fields, structFieldValue{
-			field: reflect.StructField{
-				Name:      f.Name,
-				Type:      reflect.TypeOf(value),
-				Tag:       f.Tag,
-				Anonymous: f.Anonymous,
-				PkgPath:   f.PkgPath,
-				Index:     f.Index,
-				Offset:    f.Offset,
-			},
-			value: value,
-		})
+		if t := reflect.TypeOf(value); t != nil {
+			fields = append(fields, structFieldValue{
+				field: reflect.StructField{
+					Name:      f.Name,
+					Type:      t,
+					Tag:       f.Tag,
+					Anonymous: f.Anonymous,
+					PkgPath:   f.PkgPath,
+					Index:     f.Index,
+					Offset:    f.Offset,
+				},
+				value: value,
+			})
+		}
 
 	}
-
 	return fields
 }
 
@@ -140,6 +141,9 @@ func initializeStruct(s reflect.Value, source []structFieldValue, tag string) {
 func (s *Serializer) keepField(f reflect.StructField, condition string) bool {
 	if f.Anonymous {
 		return true
+	}
+	if !unicode.IsUpper(rune(f.Name[0])) {
+		return false
 	}
 	tags, err := structtag.Parse(string(f.Tag))
 	if err != nil {
