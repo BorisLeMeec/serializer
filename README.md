@@ -29,7 +29,7 @@ func main() {
 	user := &User{} // Retrieve user from a database, for instance.
 
 	userJSON, _ := json.Marshal(user)
-	fmt.Println(userJSON)
+	fmt.Println(userJSON) // will print fields Username and Email.
 }
 ```
 
@@ -56,9 +56,15 @@ func main() {
 	user := &User{} // Retrieve user from a database, for instance.
 
 	userJSON, _ := json.Marshal(serializer.Serialize(user, "public"))
-	fmt.Println(userJSON) // will only print the fields Username.
+	fmt.Println(userJSON) // will only print the field Username.
 }
 ```
+
+# Usages
+
+To be able to `Serialize` a struct, you must start by adding the `serializer` tag to its fields.
+
+By default a field without a `serializer` tag will be considered as non-desired, except for struct and Anonymous field.
 
 # Compatibility
 
